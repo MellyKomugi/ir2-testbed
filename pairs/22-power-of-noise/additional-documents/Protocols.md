@@ -5,12 +5,12 @@ Original code and data: <https://github.com/florin-git/The-Power-of-Noise>
 
 The project has two parts:
 
-1. **Reproduction** of the paper's key result on NQ-open, at small scale, in our own notebook (Protocol 1).
-2. **Application** of the paper's heuristic to the seminar's shared testbed, Track A (Protocol 2).
+1. **Reproduction** of the paper's key results on NQ-open, at small scale, in our own notebook (Protocol 1).
+2. **Application** of the paper's oracle design to the shared testbed, on SciFact claim verification (Protocol 2).
 
-An optional complementary experiment on MS MARCO is described in Protocol 3.
+An optional MS MARCO experiment (Protocol 3) is run only if time remains.
 
-Items marked **[TO VERIFY]** must be checked in the original code or data, or confirmed by the instructor, before running.
+Items marked **[TO VERIFY]** must be checked in the original code or data before running.
 
 ---
 
@@ -23,7 +23,7 @@ A single model is used throughout, so that the reproduction and the testbed resu
 | Setting | Value |
 | --- | --- |
 | Model | `meta-llama/Llama-2-7b-chat-hf` (gated: requires a Hugging Face account, acceptance of the Meta license and an access token for download) |
-| Quantization | 4-bit with `bitsandbytes`, as in the paper **[TO VERIFY: exact settings in the original code]** |
+| Quantization | 4-bit with `bitsandbytes`, as in the paper |
 | Decoding | Greedy, max 15 new tokens (reproduction); max 50 new tokens on the testbed to allow citations |
 | Prompting | Zero-shot: task instruction, then documents, then the question last |
 
@@ -33,7 +33,7 @@ A single model is used throughout, so that the reproduction and the testbed resu
 | --- | --- |
 | GPU | NVIDIA RTX 5060, 8 GB VRAM: enough for a 7B model in 4 bits (~4 GB) plus prompts of up to 4,096 tokens, with small batches |
 | Software | Recent PyTorch and `bitsandbytes` builds supporting the Blackwell architecture **[TO VERIFY at installation]** |
-| Disk | ~20 GB free: full model weights (~13 GB, downloaded before quantization), corpus subset, testbed data and outputs |
+| Disk | ~20 GB free: full model weights (~13 GB, downloaded before quantization), data subsets and outputs |
 | RAM | 8 GB: tight when loading the model; other applications closed |
 | Fallback | Google Colab (T4) if local generation fails or is too slow |
 
@@ -41,35 +41,36 @@ If disk space is insufficient, a pre-quantized 4-bit checkpoint of the same mode
 
 ### Document types
 
-| Type | Definition (paper) | Definition (testbed) |
+| Type | Reproduction (NQ-open) | Testbed (SciFact) |
 | --- | --- | --- |
-| Gold / relevant | Passage containing the answer | Document with a positive label in the qrels |
-| Distracting | Highly ranked by the retriever but does not contain the answer | Document in the retriever's top-10 that is not in the qrels |
-| Random | Sampled from the corpus | Sampled uniformly from the corpus, excluding the qrels and the retriever's top-100 |
-| Retrieved | Retriever's top-k (may be relevant or distracting) | Retriever's top-k from our ranking |
+| Gold | Annotated passage containing the answer | Relevant abstract of the claim (with its SUPPORT or CONTRADICT label) |
+| Distracting / hard negative | Highly ranked by the retriever but without the answer | Highest-ranked documents of the BM25 (or dense) run, minus the relevant ones |
+| Random | Sampled from the corpus | Sampled uniformly, excluding the relevant abstracts and the query's top-100 |
+| Retrieved | Retriever's top-k (may be relevant or distracting) | Retriever's top-k from our BM25 run |
 
-### Prompt layout
+### Gold position
 
-The paper's realistic setting places random documents first and retrieved documents next to the question:
+Following Section 5.2 of the paper, the gold document is placed **near** the question (last in the context) or **far** from it (first). The question is always last. In the paper's realistic setting (Table 3), random documents come first and retrieved documents next to the question:
 
 ```
 [Instruction] [random documents] [retrieved documents] [Question]
 ```
 
-- **Reproduction:** we follow the order used in the original code. **[TO VERIFY: order inside the retrieved block when `put_retrieved_first` is `False`.]**
-- **Testbed:** the top-ranked document is placed **closest to the question** (reversed order), since the paper shows that relevant documents are best exploited near the question. The direct order (top-1 first) is run as an ablation.
+**[TO VERIFY in the original code: the order inside the retrieved block when `put_retrieved_first` is `False`.]**
 
 ### Reproducibility
 
 - Fixed random seed for query sampling and random-document sampling, reported with the results.
-- All per-query outputs (query id, prompt, raw generation, parsed answer, scores) are saved to disk.
+- All per-query outputs (query id, prompt, raw generation, parsed answer, scores) are saved to disk, incrementally, so that runs can resume after an interruption.
 - Each run is logged with model id, quantization, configuration and seed.
+- Output lengths and truncation rates (15-token cap) are logged to diagnose gaps with the paper.
 
 ### Statistics
 
-- Scores are computed **per query**, so that configurations can be compared with paired tests.
-- Testbed: paired t-test and bootstrap 95 % confidence interval of the per-query difference, from the shared script (`testbed.py score`).
+- Scores are computed **per query**, so that conditions can be compared with paired tests.
+- Paired t-test and bootstrap 95 % confidence interval of the per-query difference, with the tests of the shared script.
 - Additionally, Wilcoxon signed-rank test, as used in the paper (p < 0.01).
+- Comparisons between the reproduction and the testbed are made on **trends**, not on absolute values (different tasks and metrics).
 - A difference that is not significant is reported as noise, not as a gain.
 
 ---
@@ -78,11 +79,14 @@ The paper's realistic setting places random documents first and retrieved docume
 
 ### 1.1 Goal
 
-Reproduce, at small scale, the paper's main result: **adding random documents to the retrieved documents improves LLM accuracy** (Table 3, Section 5.4). Secondary goal: the drop caused by distracting documents (Table 1). Success criterion: the **direction** of each effect is reproduced and significant; absolute values may differ because of the smaller sample.
+Reproduce, at small scale, the paper's main results: **adding random documents to the retrieved documents improves LLM accuracy** (Table 3, Section 5.4), and the two oracle effects that the testbed mirrors, **distracting documents hurt** (Table 1) and **random documents help** (Table 2). Success criterion: the **direction** of each effect is reproduced and significant; absolute values may differ because of the smaller sample.
+
+To keep in mind:
+- The distractors chosen by a higher-performing retriever are more harmful, and the article explicitly states this. The impact does indeed depend on the retriever. What the article concludes, however, is that switching to a different dense retriever does not solve the problem: the accuracy remains well below 0.5642, the value of the gold set alone.
 
 ### 1.2 Implementation
 
-The reproduction is implemented in our own notebook (`reproduce.ipynb`) in the seminar repository, not by running the original scripts. We reuse the authors' **data** (questions, search results, corpus subset) and reimplement in the notebook:
+The reproduction is implemented in our own notebook (`reproduce.ipynb`) in the seminar repository, not by running the original scripts. We reuse the authors' **data** and reimplement in the notebook:
 
 - prompt construction (instruction and template of Figure 1 of the paper, document layout);
 - generation with the LLM;
@@ -92,26 +96,28 @@ For fidelity, the prompt template, the document layout and the accuracy function
 
 ### 1.3 Data
 
-| Resource | Source | Use |
+| Resource | Source | Needed for |
 | --- | --- | --- |
-| NQ-open test split (2,889 questions) | Hugging Face `florin-hf/nq_open_gold`, split `test` | Main experiment |
-| 10K sample of the train split | `data` folder of the original repository | Secondary experiment (oracle) |
-| Search results (Contriever, BM25) | `data` folder / Google Drive of the original repository, e.g. `contriever_search_results_at150.pkl` | Retrieved and distracting documents |
-| Corpus subsets | Google Drive of the original repository, `data/processed` | Text of the documents that can appear in prompts |
+| NQ-open questions, each with its gold passage (test split: 2,889) | Hugging Face `florin-hf/nq_open_gold` | All experiments |
+| 10K sample of the train split | `data` folder of the original repository | Tables 1 and 2 (oracle) |
+| Search results (Contriever, BM25), as **global indices and scores only** | `data` folder / Google Drive of the original repository | Tables 1 and 3 |
+| Corpus subsets (text of the passages that can appear in prompts) | Google Drive, `data/processed` | Tables 1 and 3 |
 
-**Only the corpus subsets are downloaded, never the full corpus** (21,035,236 passages, ~25 GB in RAM). No indexing or retrieval is run for the reproduction.
+The full Wikipedia corpus (21,035,236 passages, ~25 GB in RAM) is never downloaded, and no indexing or retrieval is run: we reuse the authors' search results.
 
-Search results store **global indices** in the full corpus. Each subset keeps only the passages that can appear in the prompts of a given configuration, indexed by their original position, so that the notebook can look them up without the full corpus.
+- **Table 2** (gold + random) needs only `nq_open_gold`: random documents can be drawn from the gold passages of other questions.
+- **Tables 1 and 3** need the **text** of the distracting and retrieved passages, which the search results do not contain. They rely on the Drive subsets, which keep the passages' original global indices.
 
 **[TO VERIFY before running:]**
 - which subset file corresponds to each configuration (test split, retrieved + random; train sample, gold + distracting);
-- that the subset contains the random documents (the README mentions random entries drawn from NQ), and how they were sampled;
+- that the subsets contain the random documents, and how they were sampled;
 - the mapping between global indices and subset entries.
+
+**Fallback if the subsets do not fit our configurations:** keep Table 2 (which needs no subset) and build a mini-corpus from the gold passages of `nq_open_gold`, on which BM25 is run locally to obtain retrieved and distracting passages (distractors are those without the answer). This is a deviation from the paper (smaller corpus) and is reported as such.
 
 ### 1.4 Sample
 
-- Main experiment: **500 questions** sampled from the test split with a fixed seed (the paper uses all 2,889).
-- Secondary experiment: **500 questions** sampled from the 10K train sample (the paper uses all 10,000).
+**500 questions** per experiment, sampled with a fixed seed (the paper uses 2,889 test questions for Table 3 and 10,000 train questions for Tables 1 and 2).
 
 ### 1.5 Configurations
 
@@ -129,14 +135,24 @@ Random documents first, retrieved documents next to the question.
 **Baseline — closed-book**
 Question only, no documents: 500 generations.
 
-**Secondary experiment — gold + distracting (Table 1, "Near" setting)**
+**Oracle — gold + distracting (Table 1, "Near" setting)**
 
 | Parameter | Values |
 | --- | --- |
 | Distracting documents (top-ranked by Contriever, without the answer) | 0, 1, 2, 4 |
-| Gold position | Last (next to the question) |
+| Gold position | Near |
 
 4 configurations × 500 questions = 2,000 generations.
+
+**Oracle — gold + random (Table 2, "Near" setting)**
+Mirrors the testbed (gold + random vs gold + hard negatives), so that trends can be compared one to one.
+
+| Parameter | Values |
+| --- | --- |
+| Random documents | 2, 4 |
+| Gold position | Near |
+
+2 configurations × 500 questions = 1,000 generations (the 0-document case is shared with Table 1).
 
 **Optional, if time allows:** gold position (near / mid / far).
 
@@ -160,90 +176,81 @@ Closed-book: 0.1123.
 
 ---
 
-## Protocol 2 — Application to the testbed (Track A)
+## Protocol 2 — Application to the testbed (SciFact)
 
 ### 2.1 Goal
 
-Test whether the paper's findings hold on another domain: do distracting documents hurt, and does random noise help, when the documents are scientific or medical abstracts rather than Wikipedia passages?
+Transpose the paper's oracle design to scientific claims: do hard negatives hurt, does random noise help, and does the position of the gold abstract matter, when the documents are scientific abstracts rather than Wikipedia passages?
 
-The method does not change the retriever's ranking: **nDCG@10 and Recall@100 are unchanged by construction** (delta = 0, reported in `results.json` with this explanation). The numbers that change are measured on the **LLM's output**, with the three scores of Section 2.6.
+The method does not change any retrieval number (**nDCG@10 and Recall@100 are unchanged by construction**), so `results.json` is not modified. The reader results (balanced accuracy per condition, with the tests) are reported in this README.
 
 ### 2.2 Data
 
-| Dataset | Docs | Queries | Use |
-| --- | --- | --- | --- |
-| SciFact | 5,183 | 300 | Main dataset: all three scores |
-| NFCorpus | 3,633 | 323 | Scores b and c |
-| ArguAna | 8,674 | 1,406 (subsample of 300) | Scores b and c |
+SciFact only (300 test claims, 5,183 abstracts).
 
-For score a on SciFact, the SUPPORTS / REFUTES / NOT ENOUGH INFO labels come from the original SciFact release (AllenAI), since they are not in the BEIR qrels. **[TO VERIFY with the instructor.]**
+- The testbed's SciFact `queries.jsonl` keeps the original labels in its metadata field. **188 of the 300 claims** have SUPPORT or CONTRADICT on their relevant abstract.
+- The other 112 were "not enough info" in the original release and are left out (a third class is possible as an extension).
+- About two thirds of the labels are SUPPORT, so the metric is **balanced accuracy**, not raw accuracy.
+- NFCorpus and ArguAna are not used: they have no answers or labels that fit this design.
 
-### 2.3 Retrieval: one ranking per dataset
+**[TO VERIFY in the repo:** name of the metadata field; number of relevant abstracts per claim and how claims with several are handled.**]**
 
-The authors' search results cover NQ only, so a new ranking is generated for each Track A dataset:
+### 2.3 Retrieval
 
-| Retriever | How | Role |
-| --- | --- | --- |
-| **BM25** | Baseline script of the testbed repository | Default retriever for all prompts |
-| Contriever (optional) | `facebook/contriever`, mean pooling of the last hidden states as in the paper, exact inner-product search (FAISS `IndexFlatIP`) | Same retriever as the paper |
-| Dense (MiniLM), RRF (optional) | Baseline scripts of the testbed repository | Retriever ablation |
+One BM25 ranking (top-100) per query, generated with the testbed baseline script. Sanity check: nDCG@10 = 0.676 and the Recall@100 of the testbed baselines. The dense run (MiniLM) is available for an ablation on the source of hard negatives.
 
-Each ranking keeps the **top-100** documents per query. Sanity check: the nDCG@10 and Recall@100 of our rankings must match the testbed baselines (e.g. BM25 on SciFact: nDCG@10 = 0.676).
+### 2.4 Prompts and conditions
 
-### 2.4 Prompts
+For each of the 188 claims, the context is built around its **gold abstract**:
 
-For each query, two prompts are built with the **same heuristic** (a few documents, then random noise):
-
-| Prompt | Content | Role |
-| --- | --- | --- |
-| **Real** | Random documents + top-k of our BM25 ranking | What a deployed system would do; the qrels are not used to build it |
-| **Ideal** | Random documents + relevant documents from the qrels (up to k) | Upper bound: what the LLM does with perfect retrieval |
+| Condition | Context |
+| --- | --- |
+| Closed-book | Claim only (floor) |
+| Gold only | Gold abstract |
+| Gold + random | Gold abstract + k random abstracts |
+| Gold + hard negatives | Gold abstract + k hard negatives |
 
 | Parameter | Values |
 | --- | --- |
-| k (retrieved or relevant documents) | 3 (paper's recommended range: 3 to 5) |
-| Random documents | 0, 3, 6 (bounded by the 4,096-token context of Llama2) |
-| Order of the retrieved block | Reversed (top-1 next to the question); direct order as ablation |
+| k | 2, 4, 8 (bounded by the 4,096-token context: ~250 tokens per abstract) |
+| Gold position | Near (last, next to the claim) and far (first) |
 
-Instruction (SciFact): answer SUPPORTS, REFUTES or NOT ENOUGH INFO, then list the documents used, most important first, in a fixed format (e.g. `Documents used: [4, 5]`).
-Instruction (NFCorpus, ArguAna): answer the query from the documents, then list the documents used in the same format. **[TO VERIFY with the instructor: expected task on ArguAna.]**
+2 + 2 × 3 × 2 × 2 = 14 conditions × 188 claims = **2,632 generations**.
 
-SciFact: 2 prompts × 3 noise levels × 300 queries = 1,800 generations, plus 900 for the order ablation.
+**Optional extension (Table 3 transposed):** real retrieval, i.e. BM25 top-3 + random noise placed first, to test the heuristic with a retriever that can fail.
 
-### 2.5 Input descriptors (not outcomes)
+**Instruction.** Answer exactly `SUPPORT` or `CONTRADICT`, then list the documents used, most important first, in a fixed format (`Documents used: [4, 5]`). An output with no valid label scores 0; the number of invalid outputs is reported per condition.
 
-For each prompt, we record the number of relevant and distracting documents it contains and the nDCG@k of its retrieved block against the qrels. These describe the quality of the context; they do not change with noise and are used to explain the outcomes.
+### 2.5 Scores
 
-### 2.6 Outcome scores
+**Main: balanced accuracy**, the mean of the recall on SUPPORT and on CONTRADICT (chance = 0.5). To obtain per-query scores for paired tests, each query's correctness (0/1) is weighted by 1 / (2 × number of claims of its class), so that the mean equals the balanced accuracy.
 
-**a. Answer (SciFact only).** The predicted label is compared with the ground-truth label (accuracy, 0/1). Without labels, the real prompt's answer is compared with the ideal prompt's answer (agreement, 0/1), keeping in mind that the ideal answer can also be wrong.
+**Attribution:** does the reader cite the gold abstract, and does a distractor pull the citation away from it?
 
-**b. Attribution.** The list of cited documents is scored against the qrels with **MRR** (is the first cited document relevant?) and **nDCG@k** (graded relevance where available, e.g. NFCorpus). This measures whether the LLM relies on the relevant documents it was given, not the retriever. Reported both over all queries and over queries whose prompt contains at least one relevant document, to separate retrieval failures from generation failures.
+- gold cited (0/1) and **MRR** of the cited list (1 / rank of the gold abstract, 0 if absent); nDCG@k is also computed (with a single gold abstract it behaves like MRR);
+- rate of queries where a distractor is cited before the gold.
 
-**c. Relative similarity.** The answer is embedded (encoder: `all-MiniLM-L6-v2`, available in the testbed). Success (1) if its maximum similarity to the **relevant** documents of the prompt is higher than its maximum similarity to the **distracting** documents of the prompt, computed over all documents of the prompt, not only the cited ones. Undefined when the prompt contains no relevant or no distracting document; these cases are counted and reported. Absolute similarity is not used, because an answer built from a distractor is also similar to the relevant document.
+### 2.6 Comparisons
 
-**Parsing.** An output with no valid label or no valid citation list scores 0 on the corresponding score; the number of invalid outputs is reported per configuration.
+- **Effect of noise:** gold + random vs gold only, for each k and position.
+- **Effect of hard negatives:** gold + hard negatives vs gold + random, same k and position.
+- **Position:** near vs far.
+- **Optional:** hard negatives from the dense run instead of BM25.
+- **Comparison with Protocol 1:** Table 1 ↔ hard negatives, Table 2 ↔ random, on trends.
 
-### 2.7 Comparisons
+The bootstrap recomputes the balanced accuracy on each resample; the Wilcoxon test is applied to per-query correctness.
 
-- Effect of noise: 0 vs 3 vs 6 random documents, for each prompt type.
-- Cost of imperfect retrieval: real vs ideal prompt, at each noise level.
-- Ablation: reversed vs direct order of the retrieved block.
-- Optional: retriever = BM25 vs Contriever vs dense (MiniLM) vs RRF(BM25 + dense).
-- Comparison with Protocol 1: **trends**, not absolute values (different tasks and metrics).
+### 2.7 Limits
 
-### 2.8 Reporting
-
-- `results.json`: nDCG@10 and Recall@100 with delta = 0 and its explanation; scores a, b and c with paired t-test p-values and bootstrap CIs against the no-noise baseline.
-- README: Wilcoxon p-values, input descriptors, invalid-output counts, ablations.
+- 188 claims give low statistical power: small effects will not be significant, and confidence intervals are reported.
+- A hard negative can be a relevant abstract that the qrels do not label.
+- **Pilot first:** if the balanced accuracy of the gold-only condition is close to 0.5 on 50 claims, the model cannot do the task and the experiment cannot discriminate between conditions. In that case, the choice of model is discussed with the instructor.
 
 ---
 
-## Protocol 3 (optional) — MS MARCO as a QA set
+## Protocol 3 (optional) — MS MARCO
 
-Conditional on obtaining reference answers for the spring MS MARCO subset (e.g. from the MS MARCO question-answering release, if query ids match). **[TO VERIFY with the instructor.]**
-
-If available: same design as Protocol 1 (one BM25 ranking generated on the subset, retrieved + random, reversed order), with substring accuracy as in the paper, on 300 to 500 queries. This experiment bridges the reproduction (NQ-open) and the testbed, and is reported in the README, not in the shared table.
+Only if time remains. The MS MARCO subset is not in the testbed repository, and reference answers would have to be retrieved from the question-answering release **[TO VERIFY]**. If run: Protocol 1 design on 300 to 500 queries, reported in this README.
 
 ---
 
@@ -251,18 +258,22 @@ If available: same design as Protocol 1 (one BM25 ranking generated on the subse
 
 | Task | Where | Notes |
 | --- | --- | --- |
-| Data download and preparation | Laptop | Corpus subsets only; the full corpus is never downloaded |
-| Rankings on Track A (BM25, optional Contriever) | Laptop | Corpora of 3,600 to 8,700 documents |
-| Prompt construction, scoring, statistics | Laptop | CPU |
-| LLM generation | Laptop GPU (RTX 5060), Colab T4 as fallback | ~11,200 generations in total (reproduction 8,500; SciFact 2,700), plus NFCorpus and ArguAna |
+| Data download and preparation | Laptop | `nq_open_gold` and the corpus subsets only |
+| BM25 on SciFact, prompt construction, scoring, statistics | Laptop | CPU |
+| LLM generation | Laptop GPU (RTX 5060), Colab T4 as fallback | See below |
 
-Before launching a full grid, one configuration is timed on 50 questions; the number of configurations is then fixed to fit the compute budget, and any reduction is reported.
+| Part | Generations | Estimated time |
+| --- | --- | --- |
+| Reproduction | ~9,500 (6,000 Table 3 + 2,000 Table 1 + 1,000 Table 2 + 500 closed-book) | 3 to 7 h |
+| Testbed | ~2,600 | 2 to 4 h |
+
+Before launching a full grid, one configuration is timed on 50 questions, and the number of configurations is fixed to fit the compute budget; any reduction is reported.
 
 ---
 
-## Pending questions for the instructor
+## Points to verify before running
 
-1. Can the original SciFact labels be added to the testbed?
-2. Is the three-score evaluation (answer, attribution, relative similarity) acceptable?
-3. Which task and metric are expected for "a RAG loop over ArguAna"?
-4. Is the MS MARCO experiment worth running?
+1. Corpus subsets on the authors' Drive: which file matches each configuration, whether it contains the random documents, and the mapping between global indices and subset entries.
+2. Order of the documents inside the retrieved block in the original code.
+3. SciFact metadata: field name and handling of claims with several relevant abstracts.
+4. Installation of PyTorch and `bitsandbytes` builds supporting the RTX 5060.

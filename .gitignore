@@ -5,3 +5,8 @@ __pycache__/
 .DS_Store
 *.npy
 .env
+
+# pair 22-power-of-noise: Keep author prompt data under this experiment
+!pairs/22-power-of-noise/data
+pairs/22-power-of-noise/data/*
+!pairs/22-power-of-noise/data/authors_prompts/

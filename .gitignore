@@ -10,3 +10,5 @@ __pycache__/
 !pairs/22-power-of-noise/data
 pairs/22-power-of-noise/data/*
 !pairs/22-power-of-noise/data/authors_prompts/
+
+pairs/22-power-of-noise/outputs/nq/prompts

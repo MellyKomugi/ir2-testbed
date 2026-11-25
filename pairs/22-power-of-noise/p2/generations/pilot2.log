@@ -1,0 +1,12 @@
+50 pilot claims, 0 widened gold windows
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  1.12it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00,  2.34it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00,  2.01it/s]
+phi2 closed_book: nothing new (resume)
+phi2 gold_only: nothing new (resume)
+phi2 random_k8_near: nothing new (resume)
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.77s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:02<00:00,  1.39s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:02<00:00,  1.44s/it]
+llama2 closed_book: nothing new (resume)
+llama2 gold_only: nothing new (resume)
+llama2 random_k8_near: nothing new (resume)
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+llama2 random_k14_near: 50 generations, 19.5 per minute

@@ -1,0 +1,84 @@
+50 pilot claims, 0 widened gold windows
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.21s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.67it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.45it/s]
+phi2 closed_book: 50 generations, 140.3 per minute
+phi2 gold_only: 50 generations, 98.5 per minute
+phi2 random_k8_near: 50 generations, 69.0 per minute
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.26s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.25it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.15it/s]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+llama2 closed_book: 50 generations, 64.0 per minute
+llama2 gold_only: 50 generations, 46.3 per minute
+llama2 random_k8_near: 50 generations, 32.0 per minute
+Traceback (most recent call last):
+  File "/tmp/md-p2/p2run/pairs/22-power-of-noise/p2/method.py", line 875, in <module>
+    pilot()
+    ~~~~~^^
+  File "/tmp/md-p2/p2run/pairs/22-power-of-noise/p2/method.py", line 716, in pilot
+    generate_cell(model, tok, window, name, cell, chosen, draws, gold_pid, {},
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  titles, sentences)
+                  ^^^^^^^^^^^^^^^^^^
+  File "/tmp/md-p2/p2run/pairs/22-power-of-noise/p2/method.py", line 666, in generate_cell
+    gen = model.generate(**ids, max_new_tokens=GEN_TOKENS, do_sample=False,
+                         pad_token_id=tok.eos_token_id)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/generation/utils.py", line 2564, in generate
+    result = decoding_method(
+        self,
+    ...<5 lines>...
+        **model_kwargs,
+    )
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/generation/utils.py", line 2784, in _sample
+    outputs = self(**model_inputs, return_dict=True)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/utils/generic.py", line 918, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/models/llama/modeling_llama.py", line 459, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+                                       ~~~~~~~~~~^
+        input_ids=input_ids,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/utils/generic.py", line 1064, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/models/llama/modeling_llama.py", line 395, in forward
+    hidden_states = decoder_layer(
+        hidden_states,
+    ...<5 lines>...
+        **kwargs,
+    )
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/modeling_layers.py", line 94, in __call__
+    return super().__call__(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/models/llama/modeling_llama.py", line 309, in forward
+    hidden_states = self.mlp(hidden_states)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/tmp/md-p2/venv/lib/python3.13/site-packages/transformers/models/llama/modeling_llama.py", line 155, in forward
+    down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 68.00 MiB. GPU 0 has a total capacity of 23.53 GiB of which 49.94 MiB is free. Process 810547 has 8.28 GiB memory in use. Including non-PyTorch memory, this process has 15.05 GiB memory in use. Of the allocated memory 14.12 GiB is allocated by PyTorch, and 701.33 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

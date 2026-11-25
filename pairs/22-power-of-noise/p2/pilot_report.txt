@@ -1,0 +1,10 @@
+phi2 closed_book: 50 outputs; label raw 100 % / strict 100 % (echoes 0, unresolved 0); gold cited first 0/50, anywhere 0/50; negated 0
+phi2 gold_only: 50 outputs; label raw 100 % / strict 100 % (echoes 0, unresolved 0); gold cited first 41/50, anywhere 41/50; negated 0
+phi2 random_k8_near: 50 outputs; label raw 92 % / strict 92 % (echoes 0, unresolved 0); gold cited first 0/50, anywhere 0/50; negated 0
+  unparsed:  TRUE Document [10](Title: The effect of folic acid supplementation on serum homocysteine levels in patients with corona
+  unparsed:  The claim is false. Document [10](Title: The effect of antiretroviral therapy on the risk of HIV transmission: a system
+  unparsed:  MICAL redox enzymes regulate actin dynamics in many cell types. Document [10](Title: The role of the nuclear receptor P
+llama2 closed_book: 50 outputs; label raw 100 % / strict 98 % (echoes 0, unresolved 0); gold cited first 0/50, anywhere 0/50; negated 0
+llama2 gold_only: 50 outputs; label raw 100 % / strict 98 % (echoes 1, unresolved 1); gold cited first 50/50, anywhere 50/50; negated 0
+llama2 random_k8_near: 50 outputs; label raw 100 % / strict 70 % (echoes 22, unresolved 15); gold cited first 39/50, anywhere 39/50; negated 0
+llama2 random_k14_near: 50 outputs; label raw 100 % / strict 92 % (echoes 5, unresolved 4); gold cited first 24/50, anywhere 25/50; negated 0
